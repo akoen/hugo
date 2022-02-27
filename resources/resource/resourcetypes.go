@@ -72,6 +72,15 @@ type ImageOps interface {
 	DecodeImage() (image.Image, error)
 }
 
+type Video interface {
+	Resource
+	VideoOps
+}
+
+type VideoOps interface {
+	Transcode(format string, spec string) (Video, error)
+}
+
 type ResourceTypeProvider interface {
 	// ResourceType is the resource type. For most file types, this is the main
 	// part of the MIME type, e.g. "image", "application", "text" etc.

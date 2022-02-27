@@ -284,7 +284,7 @@ func (l configLoader) applyConfigDefaults() error {
 		"disableAliases":                       false,
 		"debug":                                false,
 		"disableFastRender":                    false,
-		"timeout":                              "30s",
+		"timeout":                              "400s",
 		"enableInlineShortcodes":               false,
 	}
 

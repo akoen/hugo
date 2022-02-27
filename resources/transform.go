@@ -196,6 +196,10 @@ func (r *resourceAdapter) Exif() *exif.Exif {
 	return r.getImageOps().Exif()
 }
 
+func (r *resourceAdapter) Transcode(format string, spec string) (resource.Video, error) {
+	return r.getVideoOps().Transcode(format, spec)
+}
+
 func (r *resourceAdapter) Key() string {
 	r.init(false, false)
 	return r.target.(resource.Identifier).Key()
@@ -284,6 +288,15 @@ func (r *resourceAdapter) getImageOps() resource.ImageOps {
 	}
 	r.init(false, false)
 	return img
+}
+
+func (r *resourceAdapter) getVideoOps() resource.VideoOps {
+	vid, ok := r.target.(resource.VideoOps)
+	if !ok {
+		panic(fmt.Sprintf("%T is not an video", r.target))
+	}
+	r.init(false, false)
+	return vid
 }
 
 func (r *resourceAdapter) getMetaAssigner() metaAssigner {

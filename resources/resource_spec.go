@@ -99,6 +99,10 @@ func NewSpec(
 
 			s,
 		),
+		videoCache: newVideoCache(
+			fileCaches.VideoCache(),
+
+			s),
 	}
 
 	rs.ResourceCache = newResourceCache(rs)
@@ -127,6 +131,7 @@ type Spec struct {
 
 	incr          identity.Incrementer
 	imageCache    *imageCache
+	videoCache    *videoCache
 	ResourceCache *ResourceCache
 	FileCaches    filecache.Caches
 
@@ -317,7 +322,14 @@ func (r *Spec) newResource(sourceFs afero.Fs, fd ResourceSourceDescriptor) (reso
 			ir.root = ir
 			return newResourceAdapter(gr.spec, fd.LazyPublish, ir), nil
 		}
+	}
 
+	if mimeType.MainType == "video" {
+		vr := &videoResource{
+			baseResource: gr,
+		}
+
+		return newResourceAdapter(gr.spec, fd.LazyPublish, vr), nil
 	}
 
 	return newResourceAdapter(gr.spec, fd.LazyPublish, gr), nil

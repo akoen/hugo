@@ -46,6 +46,7 @@ const (
 	cacheKeyGetJSON     = "getjson"
 	cacheKeyGetCSV      = "getcsv"
 	cacheKeyImages      = "images"
+	cacheKeyVideos      = "videos"
 	cacheKeyAssets      = "assets"
 	cacheKeyModules     = "modules"
 	cacheKeyGetResource = "getresource"
@@ -65,6 +66,10 @@ var defaultCacheConfigs = Configs{
 	cacheKeyGetJSON: defaultCacheConfig,
 	cacheKeyGetCSV:  defaultCacheConfig,
 	cacheKeyImages: {
+		MaxAge: -1,
+		Dir:    resourcesGenDir,
+	},
+	cacheKeyVideos: {
 		MaxAge: -1,
 		Dir:    resourcesGenDir,
 	},
@@ -105,6 +110,11 @@ func (f Caches) GetCSVCache() *Cache {
 // ImageCache gets the file cache for processed images.
 func (f Caches) ImageCache() *Cache {
 	return f[cacheKeyImages]
+}
+
+// VideoCache get the file cache from transcoded videos.
+func (f Caches) VideoCache() *Cache {
+	return f[cacheKeyVideos]
 }
 
 // ModulesCache gets the file cache for Hugo Modules.
