@@ -32,12 +32,14 @@ func (v *videoResource) relTargetPathFromFFmpegArgs(outputFormat string, ffmpegA
 }
 
 func (v *videoResource) Transcode(format string, spec string) (resource.Video, error) {
-
 	return v.getSpec().videoCache.getOrCreate(v, format, spec)
 }
 
 func (v *videoResource) TranscodeKey(ffmpegArgs string) string {
 	p1, p2 := paths.FileAndExt(v.getResourcePaths().relTargetDirFile.file)
-
 	return helpers.MD5String(p1 + p2 + ffmpegArgs)
+}
+
+func (v *videoResource) Thumbnail() (resource.Image, error) {
+	return v.baseResource.getSpec().imageCache.videoThumb(v)
 }

@@ -200,6 +200,10 @@ func (r *resourceAdapter) Transcode(format string, spec string) (resource.Video,
 	return r.getVideoOps().Transcode(format, spec)
 }
 
+func (r *resourceAdapter) Thumbnail() (resource.Image, error) {
+	return r.getVideoOps().Thumbnail()
+}
+
 func (r *resourceAdapter) Key() string {
 	r.init(false, false)
 	return r.target.(resource.Identifier).Key()

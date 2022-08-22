@@ -79,6 +79,7 @@ type Video interface {
 
 type VideoOps interface {
 	Transcode(format string, spec string) (Video, error)
+	Thumbnail() (Image, error)
 }
 
 type ResourceTypeProvider interface {

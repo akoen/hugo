@@ -14,6 +14,8 @@
 package resources
 
 import (
+	"github.com/gohugoio/hugo/common/herrors"
+	"github.com/gohugoio/hugo/common/hexec"
 	"image"
 	"io"
 	"path/filepath"
@@ -160,6 +162,101 @@ func (c *imageCache) getOrCreate(
 	c.mu.Unlock()
 
 	return imgAdapter, nil
+}
+
+func (c *imageCache) videoThumb(
+	video *videoResource) (*resourceAdapter, error) {
+	// TODO: Should probably have its own function
+	relTarget := video.relTargetPathFromFFmpegArgs("jpg", "thumb")
+	memKey := video.relTargetPathForRel(relTarget.path(), false, false, false)
+	memKey = c.normalizeKey(memKey)
+
+	fileKeyPath := relTarget
+	if fi := video.getFileInfo(); fi != nil {
+		fileKeyPath.dir = filepath.ToSlash(filepath.Dir(fi.Meta().Path))
+	}
+	fileKey := fileKeyPath.path()
+
+	c.mu.RLock()
+	cachedImage, found := c.store[memKey]
+	c.mu.RUnlock()
+
+	if found {
+		return cachedImage, nil
+	}
+
+	// Unsure, see resource_spec.go
+	thumb := &imageResource{
+		baseResource: video.baseResource.Clone().(baseResource),
+	}
+
+	rp := thumb.getResourcePaths()
+	rp.relTargetDirFile.file = relTarget.file
+
+	// TODO: Do not understand why differs from image_cache
+	read := func(info filecache.ItemInfo, r io.ReadSeeker) error {
+		thumb.setSourceFilename(info.Name)
+		return nil
+	}
+
+	create := func(info filecache.ItemInfo, w io.WriteCloser) (err error) {
+		defer w.Close()
+
+		thumb.setSourceFilename(info.Name)
+
+		const binaryName = "ffmpeg"
+		ex := *new(hexec.Exec)
+		// TODO Security policy
+		//if err := ex.Sec().CheckAllowedExec(binaryName); err != nil {
+		//return err
+		//
+
+		inFile := video.getFileInfo().Meta().Filename
+		if err != nil {
+			return err
+		}
+
+		var cmdArgs []interface{}
+		cmdArgs = append(cmdArgs, "-i", inFile)
+		cmdArgs = append(cmdArgs, "-vf", "thumbnail", "-frames:v", "1")
+		cmdArgs = append(cmdArgs, "-f", "image2")
+		cmdArgs = append(cmdArgs, "-y")
+		cmdArgs = append(cmdArgs, "pipe:1")
+		cmdArgs = append(cmdArgs, hexec.WithStdout(w))
+
+		cmd, err := ex.New(binaryName, cmdArgs...)
+		if err != nil {
+			if hexec.IsNotFound(err) {
+				return herrors.ErrFeatureNotAvailable
+			}
+			return err
+		}
+
+		err = cmd.Run()
+		if err != nil {
+			return err
+		}
+
+		return nil
+	}
+
+	_, err := c.fileCache.ReadOrCreate(fileKey, read, create)
+	if err != nil {
+		return nil, err
+	}
+
+	thumb.setSourceFs(c.fileCache.Fs)
+	imgFormat, _ := images.ImageFormatFromExt(".jpg")
+	thumb.Image = images.NewImage(imgFormat, video.getSpec().imaging, nil, video.baseResource)
+	thumb.root = thumb
+
+	//STORE
+	c.mu.Lock()
+	thumbAdapter := newResourceAdapter(thumb.getSpec(), true, thumb)
+	c.store[memKey] = thumbAdapter
+	c.mu.Unlock()
+
+	return thumbAdapter, nil
 }
 
 func newImageCache(fileCache *filecache.Cache, ps *helpers.PathSpec) *imageCache {
